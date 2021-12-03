@@ -23,17 +23,19 @@ static const int IDT_SPEED_TIMER = 2;
 static const int IDT_BACK_ANIMATION_TIMER = 3;
 static const int IDT_SECOND_BACK_ANIMATION_TIMER = 4;
 static const int IDT_WALLS_TIMER = 5;
+static const int IDT_WALLS_ANIMATION_TIMER = 6;
+static const int IDT_REPAINT = 7;
 static const int wallsNum = 8;
 static float speed = 5;
 static float backSpeed = 10;
 static POINT wallsCentres[8] = { {300, -50},
                                     {300, 800},
-                                {500, 0 },
+                                {500, -50 },
                                     {500, 700},
                                 {700, -100 },
                                     {700, 600},
                                 {900, -50 },
-                                    {900, 600} };
+                                    {900, 800} };
 WNDCLASSEX wcex; // window class
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -101,6 +103,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static POINT ptCenter = { 100, 300 };
     static POINT backCenter = { 800, 300 };
     static POINT back2Center = { 2400, 300 };
+    static int upperWallYPos = 0;
+    static int wallsDistance = 0;
     
     static float g = 0.1;
 
@@ -111,6 +115,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SetTimer(hWnd, IDT_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
         SetTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
         SetTimer(hWnd, IDT_WALLS_TIMER, 5, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_WALLS_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
         break;
     case WM_SIZE:
     {
@@ -138,18 +143,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case IDT_SPEED_TIMER: 
             speed += g;
         case IDT_WALLS_TIMER:
-            for (int i = 0; i < wallsNum; i++)
+            for (int i = 0; i < wallsNum; i += 2)
             {
-                wallsCentres[i].x -= 2;
                 if (wallsCentres[i].x < 0) {
                     wallsCentres[i].x = 800;
+                    wallsCentres[i+1].x = 800;
+                    upperWallYPos = -200 + rand() % 150;
+                    wallsCentres[i].y = upperWallYPos;
+                    wallsDistance = 100 + rand() % 250;
+                    wallsCentres[i + 1].y = wallsCentres[i].y + wallsDistance + 650;
                 }
             }
-        InvalidateRect(hWnd, NULL, FALSE);
         }
+        case IDT_WALLS_ANIMATION_TIMER:
+        for (int i = 0; i < wallsNum; i++)
+        {
+            wallsCentres[i].x -= 2;
+        }
+    InvalidateRect(hWnd, NULL, FALSE);
     }
-    break;
 
+    break;
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
@@ -187,6 +201,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         KillTimer(hWnd, IDT_BACK_ANIMATION_TIMER);
         KillTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER);
         KillTimer(hWnd, IDT_WALLS_TIMER);
+        KillTimer(hWnd, IDT_WALLS_ANIMATION_TIMER);
         PostQuitMessage(0);
         break;
 

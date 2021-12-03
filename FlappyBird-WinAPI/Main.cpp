@@ -2,6 +2,7 @@
 #include <string.h>
 #include <tchar.h>
 #include <gdiplus.h>
+#include <atlimage.h>
 
 using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
@@ -169,7 +170,14 @@ void drawBmp(HDC hdc, POINT ptCenter, HBITMAP hBitmap) {
         point.y = 0;
 
         DPtoLP(compDc, &point, 1);
-        BitBlt(hdc, ptCenter.x - bmpWidth / 2, ptCenter.y - bmpHeight / 2, bmpWidth, bmpHeight, compDc, point.x, point.y, SRCCOPY);
+
+        BLENDFUNCTION blend;
+        blend.BlendFlags = 0;
+        blend.BlendOp = AC_SRC_OVER;
+        blend.SourceConstantAlpha = 255;
+        blend.AlphaFormat = AC_SRC_ALPHA;
+
+        AlphaBlend(hdc, ptCenter.x - bmpWidth / 2, ptCenter.y - bmpHeight / 2, bmpWidth, bmpHeight, compDc, point.x, point.y, bmpWidth, bmpHeight, blend);
         SelectObject(compDc, hNewBmp);
     }
 
@@ -180,7 +188,7 @@ HBITMAP PngToBitmap(WCHAR* pngFilePath) {
     GdiplusStartupInput gdi;
     ULONG_PTR token;
     GdiplusStartup(&token, &gdi, NULL);
-    Color Back = Color(Color::MakeARGB(100, 70, 0, 0));
+    Color Back = Color(Color::MakeARGB(100, 0, 0, 0));
     HBITMAP convertedBitmap = NULL;
     Bitmap* Bitmap = Bitmap::FromFile(pngFilePath, false);
     if (Bitmap) {

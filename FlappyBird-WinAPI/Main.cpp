@@ -12,6 +12,7 @@ static const TCHAR szWindowClass[] = _T("DesktopAppClass");
 static const TCHAR szTitle[] = _T("Flappy Bird");
 static WCHAR birdFileName[] = L"bird1.png";
 static WCHAR backFileName[] = L"back.png";
+static WCHAR wallFileName[] = L"wall.png";
 
 // brushes
 const HBRUSH ELLIPSE_BRUSH = CreateSolidBrush(RGB(255, 255, 0));
@@ -21,8 +22,18 @@ static const int IDT_BIRD_ANIMATION_TIMER = 1;
 static const int IDT_SPEED_TIMER = 2;
 static const int IDT_BACK_ANIMATION_TIMER = 3;
 static const int IDT_SECOND_BACK_ANIMATION_TIMER = 4;
+static const int IDT_WALLS_TIMER = 5;
+static const int wallsNum = 8;
 static float speed = 5;
 static float backSpeed = 10;
+static POINT wallsCentres[8] = { {300, -50},
+                                    {300, 800},
+                                {500, 0 },
+                                    {500, 700},
+                                {700, -100 },
+                                    {700, 600},
+                                {900, -50 },
+                                    {900, 600} };
 WNDCLASSEX wcex; // window class
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -53,8 +64,7 @@ int WINAPI WinMain(
     RegisterClassEx(&wcex); // register WNDCLASSEX
 
     hWnd = CreateWindow(szWindowClass, szTitle,  // window descriptor
-        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0,
-        CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+        WS_OVERLAPPEDWINDOW, 100, 100, 800, 600, NULL, NULL, hInstance, NULL);
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
@@ -72,12 +82,22 @@ int WINAPI WinMain(
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static const int ImageRadius = 70;
+    static const int lengthWalls = 8;
     static int cxClient, cyClient;
     static HBRUSH hbrush = ELLIPSE_BRUSH;
 
     static HBITMAP birdBmp = PngToBitmap(birdFileName);
     static HBITMAP backBmp = PngToBitmap(backFileName);
     static HBITMAP back2Bmp = PngToBitmap(backFileName);
+    static HBITMAP wallsBmp[8] = { PngToBitmap(wallFileName),
+        PngToBitmap(wallFileName),
+        PngToBitmap(wallFileName),
+        PngToBitmap(wallFileName),
+        PngToBitmap(wallFileName),
+        PngToBitmap(wallFileName),
+        PngToBitmap(wallFileName),
+        PngToBitmap(wallFileName)
+    };
     static POINT ptCenter = { 100, 300 };
     static POINT backCenter = { 800, 300 };
     static POINT back2Center = { 2400, 300 };
@@ -90,6 +110,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SetTimer(hWnd, IDT_SPEED_TIMER, 5, (TIMERPROC)NULL);
         SetTimer(hWnd, IDT_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
         SetTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_WALLS_TIMER, 5, (TIMERPROC)NULL);
         break;
     case WM_SIZE:
     {
@@ -116,6 +137,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             ptCenter.y += speed;
         case IDT_SPEED_TIMER: 
             speed += g;
+        case IDT_WALLS_TIMER:
+            for (int i = 0; i < wallsNum; i++)
+            {
+                wallsCentres[i].x -= 2;
+                if (wallsCentres[i].x < 0) {
+                    wallsCentres[i].x = 800;
+                }
+            }
         InvalidateRect(hWnd, NULL, FALSE);
         }
     }
@@ -130,8 +159,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         drawBmp(hdc, backCenter, backBmp);
         drawBmp(hdc, ptCenter, birdBmp);
         drawBmp(hdc, back2Center, back2Bmp);
+        for (int i = 0; i < wallsNum; i++)
+        {
+            drawBmp(hdc, wallsCentres[i], wallsBmp[i]);
+        }
         drawBmp(hdc, ptCenter, birdBmp);
         EndPaint(hWnd, &ps);
+        
     }
     break;
 
@@ -142,7 +176,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case VK_SPACE:
             speed = -7;
             break;
-         }
+        }
         InvalidateRect(hWnd, NULL, FALSE);
     }
     break;
@@ -152,6 +186,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         KillTimer(hWnd, IDT_SPEED_TIMER); 
         KillTimer(hWnd, IDT_BACK_ANIMATION_TIMER);
         KillTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER);
+        KillTimer(hWnd, IDT_WALLS_TIMER);
         PostQuitMessage(0);
         break;
 

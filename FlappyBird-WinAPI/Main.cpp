@@ -17,9 +17,12 @@ static WCHAR backFileName[] = L"back.png";
 const HBRUSH ELLIPSE_BRUSH = CreateSolidBrush(RGB(255, 255, 0));
 const HBRUSH BACKGROUND_BRUSH = CreateSolidBrush(Color::MakeARGB(100,0,0,0));
 
-static const int IDT_ANIMATION_TIMER = 1;
+static const int IDT_BIRD_ANIMATION_TIMER = 1;
 static const int IDT_SPEED_TIMER = 2;
+static const int IDT_BACK_ANIMATION_TIMER = 3;
+static const int IDT_SECOND_BACK_ANIMATION_TIMER = 4;
 static float speed = 5;
+static float backSpeed = 10;
 WNDCLASSEX wcex; // window class
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -74,31 +77,46 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     static HBITMAP birdBmp = PngToBitmap(birdFileName);
     static HBITMAP backBmp = PngToBitmap(backFileName);
+    static HBITMAP back2Bmp = PngToBitmap(backFileName);
     static POINT ptCenter = { 100, 300 };
     static POINT backCenter = { 800, 300 };
+    static POINT back2Center = { 2400, 300 };
     
     static float g = 0.1;
 
     switch (message)
     {
+    case WM_CREATE:
+        SetTimer(hWnd, IDT_SPEED_TIMER, 5, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
+        break;
     case WM_SIZE:
     {
         cxClient = LOWORD(lParam);
         cyClient = HIWORD(lParam);
-        InvalidateRect(hWnd, NULL, TRUE);
+        InvalidateRect(hWnd, NULL, FALSE);
     }
     break;
 
     case WM_TIMER:
     {
         switch (wParam) {
-            
-        case IDT_ANIMATION_TIMER: 
+        case IDT_BACK_ANIMATION_TIMER:
+            backCenter.x -= backSpeed;
+            if (backCenter.x == -800) {
+                backCenter.x = 2400;
+            }
+            back2Center.x -= backSpeed;
+            if (back2Center.x == -800) {
+                back2Center.x = 2400;
+            }
+
+        case IDT_BIRD_ANIMATION_TIMER: 
             ptCenter.y += speed;
-        
         case IDT_SPEED_TIMER: 
             speed += g;
-        InvalidateRect(hWnd, NULL, TRUE);
+        InvalidateRect(hWnd, NULL, FALSE);
         }
     }
     break;
@@ -111,6 +129,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SelectObject(hdc, hbrush);
         drawBmp(hdc, backCenter, backBmp);
         drawBmp(hdc, ptCenter, birdBmp);
+        drawBmp(hdc, back2Center, back2Bmp);
+        drawBmp(hdc, ptCenter, birdBmp);
         EndPaint(hWnd, &ps);
     }
     break;
@@ -118,22 +138,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_KEYDOWN:
     {
         int objectRadius = 20;
-        switch (wParam)
-        {
+        switch (wParam){
         case VK_SPACE:
             speed = -7;
             break;
-        case VK_RETURN:
-            SetTimer(hWnd, IDT_ANIMATION_TIMER, 10, (TIMERPROC)NULL);
-            SetTimer(hWnd, IDT_SPEED_TIMER, 10, (TIMERPROC)NULL);
-        }
-        InvalidateRect(hWnd, NULL, TRUE);
+         }
+        InvalidateRect(hWnd, NULL, FALSE);
     }
     break;
 
     case WM_DESTROY:
-        KillTimer(hWnd, IDT_ANIMATION_TIMER);
+        KillTimer(hWnd, IDT_BIRD_ANIMATION_TIMER);
         KillTimer(hWnd, IDT_SPEED_TIMER); 
+        KillTimer(hWnd, IDT_BACK_ANIMATION_TIMER);
+        KillTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER);
         PostQuitMessage(0);
         break;
 

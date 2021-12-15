@@ -16,7 +16,7 @@ static WCHAR wallFileName[] = L"wall.png";
 
 // brushes
 const HBRUSH ELLIPSE_BRUSH = CreateSolidBrush(RGB(255, 255, 0));
-const HBRUSH BACKGROUND_BRUSH = CreateSolidBrush(Color::MakeARGB(100,0,0,0));
+const HBRUSH BACKGROUND_BRUSH = CreateSolidBrush(Color::MakeARGB(100, 0, 0, 0));
 
 static const int IDT_BIRD_ANIMATION_TIMER = 1;
 static const int IDT_SPEED_TIMER = 2;
@@ -58,7 +58,7 @@ int WINAPI WinMain(
     wcex.hInstance = hInstance;
     wcex.hIcon = LoadIcon(NULL, IDI_APPLICATION);
     wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground = BACKGROUND_BRUSH;
+    wcex.hbrBackground = NULL;
     wcex.lpszMenuName = NULL;
     wcex.lpszClassName = szWindowClass;
     wcex.hIconSm = wcex.hIcon;
@@ -105,7 +105,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static POINT back2Center = { 2400, 300 };
     static int upperWallYPos = 0;
     static int wallsDistance = 0;
-    
+
     static float g = 0.1;
 
     switch (message)
@@ -138,16 +138,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 back2Center.x = 2400;
             }
 
-        case IDT_BIRD_ANIMATION_TIMER: 
+        case IDT_BIRD_ANIMATION_TIMER:
             ptCenter.y += speed;
-        case IDT_SPEED_TIMER: 
+        case IDT_SPEED_TIMER:
             speed += g;
         case IDT_WALLS_TIMER:
             for (int i = 0; i < wallsNum; i += 2)
             {
                 if (wallsCentres[i].x < 0) {
                     wallsCentres[i].x = 800;
-                    wallsCentres[i+1].x = 800;
+                    wallsCentres[i + 1].x = 800;
                     upperWallYPos = -200 + rand() % 150;
                     wallsCentres[i].y = upperWallYPos;
                     wallsDistance = 100 + rand() % 250;
@@ -155,12 +155,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             }
         }
-        case IDT_WALLS_ANIMATION_TIMER:
+    case IDT_WALLS_ANIMATION_TIMER:
         for (int i = 0; i < wallsNum; i++)
         {
             wallsCentres[i].x -= 2;
         }
-    InvalidateRect(hWnd, NULL, FALSE);
+        InvalidateRect(hWnd, NULL, FALSE);
     }
 
     break;
@@ -168,25 +168,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
-
-        SelectObject(hdc, hbrush);
-        drawBmp(hdc, backCenter, backBmp);
-        drawBmp(hdc, ptCenter, birdBmp);
-        drawBmp(hdc, back2Center, back2Bmp);
+        HDC buffDC = CreateCompatibleDC(hdc);
+        HBITMAP buffBtmp = CreateCompatibleBitmap(hdc, cxClient, cyClient);
+        SelectObject(buffDC, buffBtmp);
+        drawBmp(buffDC, backCenter, backBmp);
+        drawBmp(buffDC, ptCenter, birdBmp);
+        drawBmp(buffDC, back2Center, back2Bmp);
         for (int i = 0; i < wallsNum; i++)
         {
-            drawBmp(hdc, wallsCentres[i], wallsBmp[i]);
+            drawBmp(buffDC, wallsCentres[i], wallsBmp[i]);
         }
-        drawBmp(hdc, ptCenter, birdBmp);
+        drawBmp(buffDC, ptCenter, birdBmp);
+        BitBlt(hdc, 0, 0, cxClient, cyClient, buffDC, 0, 0, SRCCOPY);
+        DeleteDC(buffDC);
+        DeleteObject(buffBtmp);
         EndPaint(hWnd, &ps);
-        
+
     }
     break;
 
     case WM_KEYDOWN:
     {
         int objectRadius = 20;
-        switch (wParam){
+        switch (wParam) {
         case VK_SPACE:
             speed = -7;
             break;
@@ -197,7 +201,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_DESTROY:
         KillTimer(hWnd, IDT_BIRD_ANIMATION_TIMER);
-        KillTimer(hWnd, IDT_SPEED_TIMER); 
+        KillTimer(hWnd, IDT_SPEED_TIMER);
         KillTimer(hWnd, IDT_BACK_ANIMATION_TIMER);
         KillTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER);
         KillTimer(hWnd, IDT_WALLS_TIMER);

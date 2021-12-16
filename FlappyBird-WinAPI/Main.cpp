@@ -25,9 +25,14 @@ static const int IDT_SECOND_BACK_ANIMATION_TIMER = 4;
 static const int IDT_WALLS_TIMER = 5;
 static const int IDT_WALLS_ANIMATION_TIMER = 6;
 static const int IDT_REPAINT = 7;
-static const int wallsNum = 8;
-static float speed = 5;
-static float backSpeed = 10;
+
+static const int WALLS_NUM = 8;
+static float SPEED = 5;
+static const float BACK_SPEED = 10;
+int const WALL_HEIGHT = 650;
+int const WALL_WIDTH = 50;
+int const BIRD_HEIGHT = 37;
+int const BIRD_WIDTH = 48;
 static bool isGame;
 static POINT wallsCentres[8] = { {1600, 1600},
                                     {1600, 1600},
@@ -106,12 +111,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     };
     static POINT backCenter = { 800, 300 };
     static POINT back2Center = { 2400, 300 };
-    int const wallHeight = 650;
-    int const wallWidth = 50;
+    
     static int upperWallYPos = 0;
     static int wallsDistance = 0;
 
-    static float g = 0.5;
+    static float g = 0.7;
 
     switch (message)
     {
@@ -135,40 +139,41 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch (wParam) {
         case IDT_BACK_ANIMATION_TIMER:
-            backCenter.x -= backSpeed;
+            backCenter.x -= BACK_SPEED;
             if (backCenter.x == -800) {
                 backCenter.x = 2400;
             }
-            back2Center.x -= backSpeed;
+            back2Center.x -= BACK_SPEED;
             if (back2Center.x == -800) {
                 back2Center.x = 2400;
             }
             break;
         case IDT_BIRD_ANIMATION_TIMER:
             if (isGame) {
-                ptCenter.y += speed;
+                ptCenter.y += SPEED;
             }
             break;
         case IDT_SPEED_TIMER:
             if (isGame){
-                speed += g;
+                SPEED += g;
             }
             break;
         case IDT_WALLS_TIMER:
             if (isGame) {
-                for (int i = 0; i < wallsNum; i++)
+                for (int i = 0; i < WALLS_NUM; i++)
                 {
                     if (wallsCentres[i].x < -20.0) {
                         wallsCentres[i].x = 800;
                         wallsCentres[i + 1].x = 800;
                         upperWallYPos = -200 + rand() % 150;
                         wallsCentres[i].y = upperWallYPos;
-                        wallsDistance = 150 + rand() % 250;
+                        wallsDistance = 100 + rand() % 250;
                         wallsCentres[i + 1].y = wallsCentres[i].y + wallsDistance + 650;
                     }
-                    if ((ptCenter.x > wallsCentres[i].x - wallWidth / 2) && (ptCenter.x < wallsCentres[i].x + wallWidth / 2)) {
-                        if ((i % 2 == 0 && ptCenter.y < wallsCentres[i].y + wallHeight / 2) ||
-                            (i % 2 == 1 && ptCenter.y > wallsCentres[i].y - wallHeight / 2)) {
+                    if ((ptCenter.x + BIRD_WIDTH/2 > wallsCentres[i].x - WALL_WIDTH / 2) && (ptCenter.x + BIRD_WIDTH/2 < wallsCentres[i].x + WALL_WIDTH / 2)) {
+                        if (((i % 2 == 0 && ptCenter.y - BIRD_HEIGHT/2 < wallsCentres[i].y + WALL_HEIGHT / 2) ||
+                            (i % 2 == 1 && ptCenter.y + BIRD_HEIGHT/2 > wallsCentres[i].y - WALL_HEIGHT / 2)) ||
+                            ptCenter.y < 0 || ptCenter.y > 600 ) {
                             isGame = false;
                         }
                     }
@@ -176,10 +181,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
     case IDT_WALLS_ANIMATION_TIMER:
-        for (int i = 0; i < wallsNum; i++)
+        for (int i = 0; i < WALLS_NUM; i++)
         {
             if (isGame) {
-                wallsCentres[i].x -= 3;
+                wallsCentres[i].x -= 1;
             }
         }
         InvalidateRect(hWnd, NULL, FALSE);
@@ -196,7 +201,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         drawBmp(buffDC, backCenter, backBmp);
         drawBmp(buffDC, ptCenter, birdBmp);
         drawBmp(buffDC, back2Center, back2Bmp);
-        for (int i = 0; i < wallsNum; i++)
+        for (int i = 0; i < WALLS_NUM; i++)
         {
             drawBmp(buffDC, wallsCentres[i], wallsBmp[i]);
         }
@@ -215,7 +220,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam) {
         case VK_SPACE:
             if (isGame) {
-                speed = -5;
+                SPEED = -6;
             }
             else {
                 StartGame();
@@ -308,7 +313,7 @@ static void StartGame() {
                         1100, -50,
                             1100, 800 };
     int k = 0;
-    for (int i = 0; i < wallsNum; i++)
+    for (int i = 0; i < WALLS_NUM; i++)
     {
         wallsCentres[i].x = centres[k];
         k++;
@@ -316,6 +321,6 @@ static void StartGame() {
         k++;
     }
     ptCenter = { 100, 300 };
-    speed = 5;
+    SPEED = 5;
     isGame = true;
 }

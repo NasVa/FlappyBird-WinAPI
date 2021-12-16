@@ -3,6 +3,9 @@
 #include <tchar.h>
 #include <gdiplus.h>
 #include <atlimage.h>
+#include <string>
+#include <sstream>
+#include<iostream>
 
 using namespace Gdiplus;
 #pragma comment (lib,"Gdiplus.lib")
@@ -27,6 +30,7 @@ static const int IDT_WALLS_TIMER = 5;
 static const int IDT_WALLS_ANIMATION_TIMER = 6;
 static const int IDT_BUTTON_ANIMATION_TIMER = 7;
 static const int IDT_REPAINT = 7;
+static int score = 0;
 
 static const int WALLS_NUM = 8;
 static float SPEED = 5;
@@ -177,11 +181,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         wallsDistance = 100 + rand() % 250;
                         wallsCentres[i + 1].y = wallsCentres[i].y + wallsDistance + 650;
                     }
-                    if ((ptCenter.x + BIRD_WIDTH/2 > wallsCentres[i].x - WALL_WIDTH / 2) && (ptCenter.x + BIRD_WIDTH/2 < wallsCentres[i].x + WALL_WIDTH / 2)) {
+                    if ((ptCenter.x + BIRD_WIDTH/2 > wallsCentres[i].x - WALL_WIDTH / 2) && (ptCenter.x + BIRD_WIDTH/2 < wallsCentres[i].x + WALL_WIDTH / 2)) {                      
                         if (((i % 2 == 0 && ptCenter.y - BIRD_HEIGHT/2 < wallsCentres[i].y + WALL_HEIGHT / 2) ||
                             (i % 2 == 1 && ptCenter.y + BIRD_HEIGHT/2 > wallsCentres[i].y - WALL_HEIGHT / 2)) ||
                             ptCenter.y < 0 || ptCenter.y > 600 ) {
                             isGame = false;
+                        }
+                        else
+                        {
+                            if (ptCenter.x == wallsCentres[i].x) {
+                                score += 1;
+                            }
+
                         }
                     }
                 }
@@ -207,6 +218,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     break;
     case WM_PAINT:
     {
+        std::string s = std::to_string(score);
+        char const* strScore = s.c_str();
+ //       LPSTR strScore = const_cast<char*>(s.c_str());
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
         HDC buffDC = CreateCompatibleDC(hdc);
@@ -221,7 +235,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         drawBmp(buffDC, ptCenter, birdBmp);
         drawBmp(buffDC, buttonCenter, buttonBmp);
+
+        TEXTMETRIC textMetric;
+        GetTextMetrics(buffDC, &textMetric);
+        RECT rect = { 300, 50, 150, 50 };
+        DrawText(buffDC, strScore,
+            2, &rect, DT_CENTER | DT_WORDBREAK | DT_END_ELLIPSIS);
+
         BitBlt(hdc, 0, 0, cxClient, cyClient, buffDC, 0, 0, SRCCOPY);
+        TextOut(buffDC, 10, 700, strScore, 1);
         DeleteDC(buffDC);
         DeleteObject(buffBtmp);
         EndPaint(hWnd, &ps);

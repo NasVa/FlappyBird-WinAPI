@@ -28,18 +28,22 @@ static const int IDT_REPAINT = 7;
 static const int wallsNum = 8;
 static float speed = 5;
 static float backSpeed = 10;
-static POINT wallsCentres[8] = { {300, -50},
-                                    {300, 800},
-                                {500, -50 },
-                                    {500, 700},
-                                {700, -100 },
-                                    {700, 600},
-                                {900, -50 },
-                                    {900, 800} };
+static bool isGame;
+static POINT wallsCentres[8] = { {1600, 1600},
+                                    {1600, 1600},
+                                {1600, 1600 },
+                                    {1600, 1600},
+                                {1600, 1600 },
+                                    {1600, 1600},
+                                {1600, 1600 },
+                                    {1600, 1600} };
 WNDCLASSEX wcex; // window class
+
+static POINT ptCenter = { 100, 300 };
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 void drawBmp(HDC hdc, POINT ptCenter, HBITMAP hBitmap);
+void StartGame();
 HBITMAP PngToBitmap(WCHAR* pngFilePath);
 
 int WINAPI WinMain(
@@ -70,7 +74,7 @@ int WINAPI WinMain(
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
-
+    isGame = false;
     //loop to listen for the messages that Windows sends
     while (GetMessage(&msg, NULL, 0, 0))
     {
@@ -100,22 +104,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PngToBitmap(wallFileName),
         PngToBitmap(wallFileName)
     };
-    static POINT ptCenter = { 100, 300 };
     static POINT backCenter = { 800, 300 };
     static POINT back2Center = { 2400, 300 };
+    int const wallHeight = 650;
+    int const wallWidth = 50;
     static int upperWallYPos = 0;
     static int wallsDistance = 0;
 
-    static float g = 0.1;
+    static float g = 0.5;
 
     switch (message)
     {
     case WM_CREATE:
-        SetTimer(hWnd, IDT_SPEED_TIMER, 5, (TIMERPROC)NULL);
-        SetTimer(hWnd, IDT_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_SPEED_TIMER, 3, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_BACK_ANIMATION_TIMER, 3, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_BIRD_ANIMATION_TIMER, 3, (TIMERPROC)NULL);
         SetTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
         SetTimer(hWnd, IDT_WALLS_TIMER, 5, (TIMERPROC)NULL);
-        SetTimer(hWnd, IDT_WALLS_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_WALLS_ANIMATION_TIMER, 10, (TIMERPROC)NULL);
         break;
     case WM_SIZE:
     {
@@ -137,28 +143,44 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (back2Center.x == -800) {
                 back2Center.x = 2400;
             }
-
+            break;
         case IDT_BIRD_ANIMATION_TIMER:
-            ptCenter.y += speed;
+            if (isGame) {
+                ptCenter.y += speed;
+            }
+            break;
         case IDT_SPEED_TIMER:
-            speed += g;
+            if (isGame){
+                speed += g;
+            }
+            break;
         case IDT_WALLS_TIMER:
-            for (int i = 0; i < wallsNum; i += 2)
-            {
-                if (wallsCentres[i].x < 0) {
-                    wallsCentres[i].x = 800;
-                    wallsCentres[i + 1].x = 800;
-                    upperWallYPos = -200 + rand() % 150;
-                    wallsCentres[i].y = upperWallYPos;
-                    wallsDistance = 100 + rand() % 250;
-                    wallsCentres[i + 1].y = wallsCentres[i].y + wallsDistance + 650;
+            if (isGame) {
+                for (int i = 0; i < wallsNum; i++)
+                {
+                    if (wallsCentres[i].x < -20.0) {
+                        wallsCentres[i].x = 800;
+                        wallsCentres[i + 1].x = 800;
+                        upperWallYPos = -200 + rand() % 150;
+                        wallsCentres[i].y = upperWallYPos;
+                        wallsDistance = 150 + rand() % 250;
+                        wallsCentres[i + 1].y = wallsCentres[i].y + wallsDistance + 650;
+                    }
+                    if ((ptCenter.x > wallsCentres[i].x - wallWidth / 2) && (ptCenter.x < wallsCentres[i].x + wallWidth / 2)) {
+                        if ((i % 2 == 0 && ptCenter.y < wallsCentres[i].y + wallHeight / 2) ||
+                            (i % 2 == 1 && ptCenter.y > wallsCentres[i].y - wallHeight / 2)) {
+                            isGame = false;
+                        }
+                    }
                 }
             }
         }
     case IDT_WALLS_ANIMATION_TIMER:
         for (int i = 0; i < wallsNum; i++)
         {
-            wallsCentres[i].x -= 2;
+            if (isGame) {
+                wallsCentres[i].x -= 3;
+            }
         }
         InvalidateRect(hWnd, NULL, FALSE);
     }
@@ -192,7 +214,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         int objectRadius = 20;
         switch (wParam) {
         case VK_SPACE:
-            speed = -7;
+            if (isGame) {
+                speed = -5;
+            }
+            else {
+                StartGame();
+            }
             break;
         }
         InvalidateRect(hWnd, NULL, FALSE);
@@ -269,4 +296,26 @@ HBITMAP PngToBitmap(WCHAR* pngFilePath) {
     }
     GdiplusShutdown(token);
     return convertedBitmap;
+}
+
+static void StartGame() {
+    int centres[16] = { 500, -50,
+                            500, 800,
+                        700, -50,
+                            700, 700,
+                        900, -100,
+                            900, 700,
+                        1100, -50,
+                            1100, 800 };
+    int k = 0;
+    for (int i = 0; i < wallsNum; i++)
+    {
+        wallsCentres[i].x = centres[k];
+        k++;
+        wallsCentres[i].y = centres[k];
+        k++;
+    }
+    ptCenter = { 100, 300 };
+    speed = 5;
+    isGame = true;
 }

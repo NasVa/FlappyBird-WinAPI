@@ -13,6 +13,7 @@ static const TCHAR szTitle[] = _T("Flappy Bird");
 static WCHAR birdFileName[] = L"bird1.png";
 static WCHAR backFileName[] = L"back.png";
 static WCHAR wallFileName[] = L"wall.png";
+static WCHAR buttonFileName[] = L"playButton.png";
 
 // brushes
 const HBRUSH ELLIPSE_BRUSH = CreateSolidBrush(RGB(255, 255, 0));
@@ -24,6 +25,7 @@ static const int IDT_BACK_ANIMATION_TIMER = 3;
 static const int IDT_SECOND_BACK_ANIMATION_TIMER = 4;
 static const int IDT_WALLS_TIMER = 5;
 static const int IDT_WALLS_ANIMATION_TIMER = 6;
+static const int IDT_BUTTON_ANIMATION_TIMER = 7;
 static const int IDT_REPAINT = 7;
 
 static const int WALLS_NUM = 8;
@@ -33,6 +35,8 @@ int const WALL_HEIGHT = 650;
 int const WALL_WIDTH = 50;
 int const BIRD_HEIGHT = 37;
 int const BIRD_WIDTH = 48;
+int const BUTTON_HEIGHT = 100;
+int const BUTTON_WIDTH = 300;
 static bool isGame;
 static POINT wallsCentres[8] = { {1600, 1600},
                                     {1600, 1600},
@@ -109,8 +113,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PngToBitmap(wallFileName),
         PngToBitmap(wallFileName)
     };
+    static HBITMAP buttonBmp = PngToBitmap(buttonFileName);
     static POINT backCenter = { 800, 300 };
     static POINT back2Center = { 2400, 300 };
+    static POINT buttonCenter = { 400, 300 };
     
     static int upperWallYPos = 0;
     static int wallsDistance = 0;
@@ -126,6 +132,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SetTimer(hWnd, IDT_SECOND_BACK_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
         SetTimer(hWnd, IDT_WALLS_TIMER, 5, (TIMERPROC)NULL);
         SetTimer(hWnd, IDT_WALLS_ANIMATION_TIMER, 10, (TIMERPROC)NULL);
+        SetTimer(hWnd, IDT_BUTTON_ANIMATION_TIMER, 5, (TIMERPROC)NULL);
         break;
     case WM_SIZE:
     {
@@ -180,6 +187,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             }
         }
+    case IDT_BUTTON_ANIMATION_TIMER:
+        if (isGame) {
+            buttonCenter = { -400, -300 };
+        }
+        else {
+            buttonCenter = { 400, 300 };
+        }
     case IDT_WALLS_ANIMATION_TIMER:
         for (int i = 0; i < WALLS_NUM; i++)
         {
@@ -189,7 +203,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         InvalidateRect(hWnd, NULL, FALSE);
     }
-
+ 
     break;
     case WM_PAINT:
     {
@@ -206,6 +220,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             drawBmp(buffDC, wallsCentres[i], wallsBmp[i]);
         }
         drawBmp(buffDC, ptCenter, birdBmp);
+        drawBmp(buffDC, buttonCenter, buttonBmp);
         BitBlt(hdc, 0, 0, cxClient, cyClient, buffDC, 0, 0, SRCCOPY);
         DeleteDC(buffDC);
         DeleteObject(buffBtmp);
@@ -213,7 +228,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     }
     break;
-
+    case WM_LBUTTONDOWN:{
+        int xPos = LOWORD(lParam);
+        int yPos = HIWORD(lParam);
+        if (xPos > buttonCenter.x - BUTTON_WIDTH / 2 && xPos < buttonCenter.x + BUTTON_WIDTH / 2 &&
+            yPos > buttonCenter.y - BUTTON_HEIGHT / 2 && yPos < buttonCenter.y + BUTTON_HEIGHT / 2) {
+            StartGame();
+        }
+    }
+    break;
     case WM_KEYDOWN:
     {
         int objectRadius = 20;

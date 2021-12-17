@@ -17,7 +17,7 @@ static WCHAR birdFileName[] = L"bird1.png";
 static WCHAR backFileName[] = L"back.png";
 static WCHAR wallFileName[] = L"wall.png";
 static WCHAR buttonFileName[] = L"playButton.png";
-static WCHAR scoreboardFileName[] = L"score.png";
+static WCHAR scoreboardFileName[] = L"scoreBoard.png";
 static WCHAR birdFileNames[8][12] = { L"1/bird1.png",
  L"1/bird2.png", 
  L"1/bird3.png", 
@@ -26,6 +26,11 @@ static WCHAR birdFileNames[8][12] = { L"1/bird1.png",
  L"1/bird6.png", 
  L"1/bird7.png", 
  L"1/bird8.png" };
+
+
+HFONT hFont;
+char szNev_ch[] = "1.fnt";
+LOGFONT lf;
 
 // brushes
 const HBRUSH ELLIPSE_BRUSH = CreateSolidBrush(RGB(255, 255, 0));
@@ -46,8 +51,8 @@ static float SPEED = 5;
 static const float BACK_SPEED = 10;
 int const WALL_HEIGHT = 650;
 int const WALL_WIDTH = 50;
-int const BIRD_HEIGHT = 37;
-int const BIRD_WIDTH = 48;
+int const BIRD_HEIGHT = 60;
+int const BIRD_WIDTH = 80;
 int const BUTTON_HEIGHT = 100;
 int const BUTTON_WIDTH = 300;
 static bool isGame;
@@ -116,7 +121,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static int cxClient, cyClient;
     static HBRUSH hbrush = ELLIPSE_BRUSH;
 
-    //static HBITMAP birdBmp = PngToBitmap(birdFileName);
     static HBITMAP backBmp = PngToBitmap(backFileName);
     static HBITMAP back2Bmp = PngToBitmap(backFileName);
     static HBITMAP wallsBmp[8] = { PngToBitmap(wallFileName),
@@ -214,12 +218,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                             ptCenter.y < 0 || ptCenter.y > 600 ) {
                             isGame = false;
                         }
-                        else
-                        {
-                            if (ptCenter.x == wallsCentres[i].x) {
-                                score += 1;
-                            }
-
+                        else{
+                        //if (ptCenter.x == wallsCentres[i].x + 50) {
+                            score += 1;
                         }
                     }
                 }
@@ -245,6 +246,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     break;
     case WM_PAINT:
     {
+        AddFontResourceA("1.fnt");
+        lf.lfHeight = 30; 
+        strcpy(lf.lfFaceName, szNev_ch);
+        
+
         std::string s = std::to_string(score);
         char const* strScore = s.c_str();
         PAINTSTRUCT ps;
@@ -258,21 +264,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             drawBmp(buffDC, wallsCentres[i], wallsBmp[i]);
         }
-        drawBmp(buffDC, ptCenter, birdBmp[curBirdAnimation]);
-        //drawBmp(buffDC, ptCenter, birdBmp); 
+        drawBmp(buffDC, ptCenter, birdBmp[curBirdAnimation]); 
         drawBmp(buffDC, buttonCenter, buttonBmp);
         drawBmp(buffDC, scoreboardCenter, scoreboardBmp);
-        TEXTMETRIC textMetric;
-        GetTextMetrics(buffDC, &textMetric);
+        hFont = CreateFontIndirect(&lf);
         SelectObject(buffDC, GetStockObject(NULL_BRUSH));
-        RECT rect = { 700, 50, 750, 100};
+        SetBkMode(buffDC, TRANSPARENT);
+        SelectObject(buffDC, hFont);
+        RECT rect = { 700, 35, 800, 100 };
         DrawText(buffDC, strScore,
-            2, &rect, DT_CENTER | DT_WORDBREAK | DT_END_ELLIPSIS);
+            sizeof(strScore), &rect, DT_CENTER | DT_WORDBREAK | DT_END_ELLIPSIS);
         SetBkMode(buffDC, TRANSPARENT);
         BitBlt(hdc, 0, 0, cxClient, cyClient, buffDC, 0, 0, SRCCOPY);
-        TextOut(buffDC, 10, 700, strScore, 1);
         DeleteDC(buffDC);
         DeleteObject(buffBtmp);
+        DeleteObject(hFont);
         EndPaint(hWnd, &ps);
 
     }
